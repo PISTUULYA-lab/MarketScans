@@ -2,21 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import useSWR from "swr"
-import {
-  TrendingUp,
-  Globe,
-  ArrowUpRight,
-  ArrowDownRight,
-  Compass,
-  ShieldAlert,
-  Layers,
-  RefreshCw,
-  Zap,
-  Activity,
-  Search,
-  X,
-  AlertCircle,
-} from "lucide-react"
+import { TrendingUp, Globe, ArrowUpRight, ArrowDownRight, Compass, ShieldAlert, Layers, RefreshCw, Zap, Activity, Search, X, CircleAlert as AlertCircle } from "lucide-react"
 import {
   AreaChart,
   Area,
