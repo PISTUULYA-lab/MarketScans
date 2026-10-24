@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guardian</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#020a05;--panel:#06150c;--neon:#39ff14;--dim:#1f8f0c;--faint:rgba(57,255,20,.12);
+  --warn:#ff4d4d;--amber:#ffc400;--text:#b8ffa8;
+  --display:"Orbitron","Segoe UI",sans-serif;
+  --mono:"Share Tech Mono",Consolas,"Courier New",monospace
+}
+*{box-sizing:border-box}
+body{margin:0;padding:20px 16px 48px;
+  background:radial-gradient(ellipse at 50% 0,#0a2a12,transparent 60%),
+    repeating-linear-gradient(0deg,rgba(57,255,20,.035) 0 1px,transparent 1px 4px),var(--bg);
+  color:var(--text);font-family:var(--mono);min-height:100vh}
+h1{font-family:var(--display);font-weight:800;letter-spacing:.18em;
+  font-size:clamp(1.3rem,4vw,1.9rem);margin:0 0 2px;color:var(--neon);
+  text-shadow:0 0 12px rgba(57,255,20,.7)}
+h2{font-family:var(--display);font-weight:500;letter-spacing:.1em;
+  font-size:.95rem;margin:0 0 10px;color:var(--neon)}
+.sub{margin:0 0 16px;color:var(--dim)}
+.wrap{display:grid;gap:18px;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);
+  max-width:1100px;margin:0 auto}
+@media(max-width:860px){.wrap{grid-template-columns:1fr}}
+.stage{position:relative;aspect-ratio:4/3;background:#000;
+  border:1px solid var(--dim);box-shadow:0 0 24px rgba(57,255,20,.18);overflow:hidden}
+.stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  transform:scaleX(-1);filter:grayscale(.5) sepia(.2) hue-rotate(60deg);transition:filter .25s}
+.stage.blur video{filter:blur(28px) grayscale(1) brightness(.5)}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%}
+.stage.preview-hidden video,.stage.preview-hidden canvas{visibility:hidden}
+.stage.preview-hidden::after{content:"PREVIEW HIDDEN";position:absolute;inset:0;
+  display:grid;place-items:center;color:var(--dim);background:#000;font-family:var(--display);
+  letter-spacing:.2em;font-size:.85rem}
+.idle{position:absolute;inset:0;display:grid;place-items:center;text-align:center;
+  padding:24px;color:var(--dim);
+  background:repeating-linear-gradient(45deg,#020a05 0 10px,#03100a 10px 20px)}
+.banner{position:absolute;left:0;right:0;top:42%;text-align:center;
+  font-family:var(--display);font-weight:800;letter-spacing:.2em;
+  color:var(--warn);text-shadow:0 0 14px var(--warn);display:none;
+  font-size:clamp(1rem,3.5vw,1.6rem)}
+.stage.blur .banner{display:block}
+.controls{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
+button{font-family:var(--display);font-size:.75rem;letter-spacing:.1em;
+  color:var(--neon);background:var(--faint);border:1px solid var(--neon);
+  padding:10px 16px;cursor:pointer;transition:.15s}
+button:hover:not(:disabled){background:var(--neon);color:#021006;
+  box-shadow:0 0 16px rgba(57,255,20,.7)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #fff;outline-offset:2px}
+button:disabled{opacity:.35;cursor:not-allowed}
+button.small{padding:4px 8px;font-size:.65rem}
+.card{border:1px solid var(--dim);background:var(--panel);padding:14px;margin-bottom:14px}
+.status{border-left:3px solid var(--dim);padding:6px 10px;background:var(--panel);
+  margin-bottom:12px;min-height:1.6em}
+.status.error{border-color:var(--warn);color:var(--warn)}
+.row{display:flex;justify-content:space-between;gap:10px;padding:3px 0;
+  border-bottom:1px dashed rgba(57,255,20,.15);font-size:.9rem;align-items:center}
+.state{font-family:var(--display);font-weight:800;font-size:1.15rem;margin:4px 0 8px}
+.ok{color:var(--neon);text-shadow:0 0 10px rgba(57,255,20,.7)}
+.bad{color:var(--warn)}
+.mid{color:var(--amber)}
+label.t{display:inline-flex;gap:6px;align-items:center;margin-right:14px;cursor:pointer}
+input[type=text],input[type=number],select{background:#000;color:var(--neon);
+  border:1px solid var(--dim);padding:8px;font-family:var(--mono)}
+input[type=text]{width:150px}
+input[type=number]{width:80px;text-align:right}
+select{width:100%;max-width:220px}
+input[type=checkbox]{accent-color:var(--neon)}
+ul{list-style:none;margin:8px 0 0;padding:0;max-height:200px;overflow:auto;font-size:.85rem}
+li{padding:3px 0;border-bottom:1px dashed rgba(57,255,20,.15)}
+li.alert{color:var(--warn)}
+.note{font-size:.78rem;color:var(--dim);line-height:1.5;margin:8px 0 0}
+.big{font-family:var(--display);font-weight:800;font-size:1.6rem;color:var(--neon);
+  text-shadow:0 0 12px rgba(57,255,20,.7)}
+.bar{height:8px;background:#031a0a;border:1px solid var(--dim);margin-top:6px;
+  position:relative;overflow:hidden}
+.bar>div{height:100%;background:var(--neon);box-shadow:0 0 8px rgba(57,255,20,.7);
+  width:0;transition:width .3s}
+.debug{position:fixed;bottom:8px;right:8px;background:rgba(0,0,0,.85);
+  border:1px solid var(--dim);padding:6px 8px;font-size:.7rem;color:var(--dim);
+  max-width:280px;display:none;z-index:99}
+.debug.on{display:block}
+.debug pre{margin:0;white-space:pre-wrap;font-family:var(--mono)}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<h1>GUARDIAN</h1>
+<p class="sub">Study focus and posture coach, privacy guard, and focus rewards. Everything runs in this browser tab.</p>
+<div class="wrap">
+ <div>
+  <div class="stage" id="stage">
+   <div class="idle" id="idle"><div>CAMERA OFFLINE<br>Press "Start camera".</div></div>
+   <video id="video" autoplay muted playsinline hidden></video>
+   <canvas id="ov"></canvas>
+   <div class="banner">UNAUTHORIZED VIEWER</div>
+  </div>
+  <div class="controls">
+   <button id="startBtn">Start camera</button>
+   <button id="stopBtn" disabled>Stop camera</button>
+   <button id="calBtn" disabled>Set my sitting position</button>
+   <button id="hideBtn" class="small" disabled>Hide preview</button>
+  </div>
+  <div class="status" id="status" role="status" aria-live="polite">Loading models…</div>
+  <label class="t"><input type="checkbox" id="studyOn" checked> Study guard</label>
+  <label class="t"><input type="checkbox" id="privOn" checked> Privacy guard</label>
+  <label class="t"><input type="checkbox" id="soundOn" checked> Sound alerts</label>
+  <label class="t"><input type="checkbox" id="breakOn" checked> 20-20-20 breaks</label>
+
+  <div class="card" style="margin-top:14px">
+   <h2>EVENT LOG</h2>
+   <button id="csvBtn" class="small">Export CSV</button>
+   <button id="jsonBtn" class="small">Backup (JSON)</button>
+   <button id="importBtn" class="small">Restore</button>
+   <input type="file" id="importFile" accept="application/json" hidden>
+   <ul id="log"></ul>
+  </div>
+ </div>
+
+ <div>
+  <div class="card">
+   <h2>STUDY GUARD</h2>
+   <div class="state mid" id="sState" aria-live="polite">~ Idle</div>
+   <div class="row"><span>Focused time</span><span id="fTime">00:00</span></div>
+   <div class="row"><span>Session time</span><span id="tTime">00:00</span></div>
+   <div class="row"><span>Focus rate</span><span id="fPct">--</span></div>
+   <div class="row"><span>Posture</span><span id="posture">--</span></div>
+   <div class="row"><span>Eyes (openness)</span><span id="earv">--</span></div>
+   <div class="row"><span>Head (turn / tilt)</span><span id="headv">--</span></div>
+   <div class="row"><span>Blinks (session)</span><span id="blinksv">0</span></div>
+   <p class="note">Sit well and press "Set my sitting position" once per person. Eye, head and posture limits are then relative to you. Head direction is tracked, but not where your eyes point.</p>
+  </div>
+
+  <div class="card">
+   <h2>SESSION AND REWARD</h2>
+   <div class="controls" style="margin:0 0 8px">
+    <button id="sessBtn" disabled>Start session</button>
+    <button id="pauseBtn" class="small" disabled>Pause</button>
+    <button id="resetRw" class="small">Reset rewards</button>
+   </div>
+   <div class="row"><span>Flags: no focus / absent / look away</span><span id="flagsv">0 / 0 / 0</span></div>
+   <div class="row"><span>Multiplier</span><span id="multv">--</span></div>
+   <div class="row"><span>Projected points</span><span id="projv">0</span></div>
+   <div class="row"><span>Total points banked</span><span class="big" id="totv">0</span></div>
+   <div class="row"><span>Today's focus</span><span id="todayv">0 min / 30 min</span></div>
+   <div class="bar"><div id="todayBar"></div></div>
+   <div class="row" style="margin-top:6px"><span>Daily goal (min)</span><input type="number" id="goalIn" min="1" max="600" value="30"></div>
+   <div class="row"><span>Streak</span><span id="streakv">0 days</span></div>
+   <ul id="hist"></ul>
+   <p class="note">Points = focused minutes × 10 × multiplier. Clean session (zero flags): multiplier = 1 + focus rate, up to ×2.0. With flags: multiplier = focus rate − 0.03 per flag beyond the first (minimum ×0.5). Rewards are saved in this browser and anyone with developer tools can edit them, so this is for self-motivation only.</p>
+  </div>
+
+  <div class="card">
+   <h2>PRIVACY GUARD</h2>
+   <div class="state mid" id="pState" aria-live="polite">~ Idle</div>
+   <div class="controls" style="margin:6px 0">
+    <input type="text" id="nameIn" placeholder="Name" maxlength="30" aria-label="Name to enroll">
+    <button id="enrollBtn" disabled>Enroll face</button>
+    <button id="clearBtn" class="small">Delete all faces</button>
+   </div>
+   <div id="enrolled" class="note"></div>
+   <p class="note">Enroll only people who agreed. Faces are stored as numeric data in this browser only. A partly hidden face is shown as "verifying" and does not trigger the alert. With nobody enrolled, any second face triggers it. This is a convenience feature, not real security: a photo can fool it.</p>
+  </div>
+
+  <div class="card">
+   <h2>SETTINGS</h2>
+   <div class="row"><span>Camera</span><select id="camSel"></select></div>
+   <div class="row"><span>Detector confidence</span><input type="number" id="cfgScore" min="0.3" max="0.95" step="0.05" value="0.75"></div>
+   <div class="row"><span>Yaw limit (°)</span><input type="number" id="cfgYaw" min="5" max="45" step="1" value="15"></div>
+   <div class="row"><span>Pitch limit (°)</span><input type="number" id="cfgPitch" min="5" max="45" step="1" value="12"></div>
+   <div class="row"><span>Eye-close ratio</span><input type="number" id="cfgEar" min="0.4" max="0.95" step="0.01" value="0.72"></div>
+   <button id="cfgReset" class="small">Reset settings</button>
+  </div>
+ </div>
+</div>
+<div class="debug" id="debug"><pre id="debugPre"></pre></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js"></script>
+<script>
+(() => {
+"use strict";
+
+/* ---------------- constants ---------------- */
+const MODEL_URL = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/model/";
+
+const DEFAULTS = {
+  minScore: 0.75,       // strict: fully visible, used for privacy + enrolment
+  minScoreStudy: 0.55,  // looser: usable for the study subject
+  edge: 6,              // px margin: face touching edge counts as partial
+  matchDist: 0.5,
+  unknownDist: 0.6,
+  revokeDist: 0.7,
+  badTicks: 4,
+  yawDev: 0.15, pitchDev: 0.12, rollDev: 15,
+  earRatio: 0.72, defaultEar: 0.2,
+  pointsPerFocusMin: 10,
+  minSessionMin: 1,
+  breakIntervalMin: 20,
+  breakDurationSec: 20
+};
+let CFG = { ...DEFAULTS };
+
+const KEYS = {
+  cfg:   "guardian_cfg_v2",
+  faces: "guardian_faces_v2",
+  rw:    "guardian_rewards_v2",
+  cal:   "guardian_cal_v2",
+  daily: "guardian_daily_v2",
+  log:   "guardian_log_v2"
+};
+
+const EP = {
+  absent:    { grace: 1000, flag: 3000, ms: 0, flagged: false, name: "Absent" },
+  no_focus:  { grace: 600,  flag: 1500, ms: 0, flagged: false, name: "No focus (eyes closed)" },
+  look_away: { grace: 800,  flag: 2000, ms: 0, flagged: false, name: "Look away" }
+};
+
+/* ---------------- DOM ---------------- */
+const $ = id => document.getElementById(id);
+const video = $("video"), ov = $("ov"), stage = $("stage"), statusEl = $("status");
+const debugEl = $("debug"), debugPre = $("debugPre");
+const DEBUG = new URLSearchParams(location.search).has("debug");
+if (DEBUG) debugEl.classList.add("on");
+
+/* ---------------- state ---------------- */
+let modelsReady = false, cameraOn = false, running = false, stream = null;
+let audio = null, matcher = null, faces = [], lastT = 0, frameCount = 0, lastDebugT = 0;
+let base = {};            // per-name calibration
+let tracks = [], nextId = 1, seenAt = {}, lastWhy = "";
+let intruderUntil = 0, intruderOpen = false, lastAlert = 0;
+let logRows = [];
+let eaS = [], yawS = [], pitchS = [];
+let lastPrimary = null;
+let calibState = null;
+const EMA = { ear: 0.30, yaw: 0.35, pitch: 0.35 };
+const counts = { absent: 0, no_focus: 0, look_away: 0 };
+const sess = { active: false, paused: false, ms: 0, focusMs: 0, blinks: 0,
+               breakAt: 0, onBreak: false, breakLeft: 0 };
+let rw = { points: 0, sessions: [] };
+let daily = {};
+let reasonTxt = "";
+
+/* ---------------- utilities ---------------- */
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const setStatus = (m, err) => {
+  statusEl.textContent = m;
+  statusEl.classList.toggle("error", !!err);
+  if (!err) {
+    clearTimeout(setStatus._t);
+    setStatus._t = setTimeout(() => {
+      if (statusEl.textContent === m) statusEl.textContent = "";
+    }, 8000);
+  }
+};
+const fmt = ms => {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+};
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const earOf = (p, o) => (dist(p[o+1], p[o+5]) + dist(p[o+2], p[o+4])) / (2 * dist(p[o], p[o+3]));
+const pct = (a, p) => {
+  if (!a.length) return null;
+  const s = [...a].sort((x, y) => x - y);
+  return s[Math.floor((s.length - 1) * p)];
+};
+const keep = (a, v) => { a.push(v); if (a.length > 200) a.shift(); };
+const safeText = s => String(s).replace(/[<>&"]/g, c => ({ "<":"&lt;", ">":"&gt;", "&":"&amp;", '"':"&quot;" }[c]));
+const todayKey = () => {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+};
+const counting = () => sess.active && !sess.paused && !sess.onBreak;
+
+function loadJSON(k, def) {
+  try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? def : v; }
+  catch { return def; }
+}
+function saveJSON(k, v) {
+  try { localStorage.setItem(k, JSON.stringify(v)); }
+  catch (e) { setStatus("Could not save to this browser's storage.", true); }
+}
+
+/* ---------------- log + audio ---------------- */
+function log(msg, alert) {
+  logRows.unshift({ t: new Date(), msg: String(msg), alert: !!alert });
+  logRows = logRows.slice(0, 200);
+  renderLog();
+  saveJSON(KEYS.log, logRows);
+}
+function renderLog() {
+  $("log").innerHTML = logRows.slice(0, 60).map(r =>
+    `<li class="${r.alert ? "alert" : ""}">${safeText(r.t.toLocaleTimeString())} - ${safeText(r.msg)}</li>`
+  ).join("");
+}
+function beep(freq = 880, dur = 0.25, gain = 0.08) {
+  if (!$("soundOn").checked || !audio) return;
+  try {
+    const o = audio.createOscillator(), g = audio.createGain();
+    o.frequency.value = freq; g.gain.value = gain;
+    o.connect(g); g.connect(audio.destination);
+    o.start(); o.stop(audio.currentTime + dur);
+  } catch {}
+}
+function alertOnce(msg) {
+  const n = performance.now();
+  if (n - lastAlert < 6000) return;
+  lastAlert = n; beep(); log("Posture: " + msg, true);
+}
+
+/* ---------------- face storage / matcher ---------------- */
+function normalizeFaces(list) {
+  return (list || []).map(f => {
+    // Legacy: flat 128-array → wrap
+    if (Array.isArray(f.d) && typeof f.d[0] === "number" && f.d.length === 128) {
+      return { name: f.name, d: [f.d] };
+    }
+    // Sanity check
+    if (!f || typeof f.name !== "string" || !Array.isArray(f.d) || !f.d.length) return null;
+    return f;
+  }).filter(Boolean);
+}
+function rebuild() {
+  try {
+    const valid = faces.filter(f =>
+      Array.isArray(f.d) && f.d.length > 0 &&
+      f.d.every(arr => Array.isArray(arr) && arr.length === 128));
+    if (valid.length !== faces.length) { faces = valid; saveJSON(KEYS.faces, faces); }
+    const canMatch = faces.length > 0 && typeof faceapi !== "undefined" &&
+                     faceapi.nets.faceRecognitionNet && faceapi.nets.faceRecognitionNet.isLoaded;
+    matcher = canMatch
+      ? new faceapi.FaceMatcher(
+          faces.map(f => new faceapi.LabeledFaceDescriptors(
+            f.name, f.d.map(a => new Float32Array(a)))),
+          CFG.matchDist)
+      : null;
+  } catch (e) {
+    matcher = null;
+    setStatus("Stored face data is corrupt. Delete faces and re-enroll.", true);
+  }
+  const box = $("enrolled");
+  box.textContent = "";
+  if (!faces.length) { box.textContent = "Nobody enrolled yet."; return; }
+  faces.forEach((f, i) => {
+    const wrap = document.createElement("div");
+    wrap.appendChild(document.createTextNode(f.name + " "));
+    const b = document.createElement("button");
+    b.className = "small"; b.textContent = "Remove"; b.dataset.i = i;
+    wrap.appendChild(b);
+    box.appendChild(wrap);
+  });
+}
+$("enrolled").addEventListener("click", e => {
+  const i = e.target.dataset.i;
+  if (i === undefined) return;
+  faces.splice(+i, 1); saveJSON(KEYS.faces, faces); rebuild(); tracks = [];
+});
+$("clearBtn").onclick = () => {
+  if (!confirm("Delete all enrolled faces? This cannot be undone.")) return;
+  faces = []; saveJSON(KEYS.faces, faces); rebuild(); tracks = [];
+  log("All enrolled faces deleted");
+};
+
+/* ---------------- quality / tracking ---------------- */
+function goodQuality(d, forStudy) {
+  const minScore = forStudy ? CFG.minScoreStudy : CFG.minScore;
+  const b = d.detection.box, m = CFG.edge;
+  return d.detection.score >= minScore &&
+         b.x >= m && b.y >= m &&
+         b.x + b.width  <= ov.width  - m &&
+         b.y + b.height <= ov.height - m;
+}
+function iou(a, b) {
+  const x1 = Math.max(a.x, b.x), y1 = Math.max(a.y, b.y);
+  const x2 = Math.min(a.x + a.width, b.x + b.width);
+  const y2 = Math.min(a.y + a.height, b.y + b.height);
+  const i = Math.max(0, x2 - x1) * Math.max(0, y2 - y1);
+  return i / ((a.width * a.height + b.width * b.height - i) || 1);
+}
+function updateTracks(dets, now) {
+  const used = new Set();
+  dets.forEach(d => {
+    const b = d.detection.box;
+    let best = null, bi = 0.25;
+    tracks.forEach(t => {
+      if (used.has(t.id)) return;
+      const v = iou(t.box, b);
+      if (v > bi) { bi = v; best = t; }
+    });
+    // Fast-mover fallback: match by center distance
+    if (!best) {
+      let nd = Infinity;
+      tracks.forEach(t => {
+        if (used.has(t.id)) return;
+        const cd = Math.hypot(
+          (t.box.x + t.box.width / 2) - (b.x + b.width / 2),
+          (t.box.y + t.box.height / 2) - (b.y + b.height / 2));
+        if (cd < Math.min(t.box.width, b.width) * 0.6 && cd < nd) { nd = cd; best = t; }
+      });
+    }
+    if (!best) { best = { id: nextId++, label: null, bad: 0, verifiedAt: 0, pendingSince: 0 }; tracks.push(best); }
+    used.add(best.id);
+    best.box = b; best.seen = now;
+    d.track = best;
+    d.good = goodQuality(d, false);
+    d.studyGood = goodQuality(d, true);
+
+    if (matcher && d.good && d.descriptor && now - (best.verifiedAt || 0) > 500) {
+      const m = matcher.findBestMatch(d.descriptor);
+      best.verifiedAt = now;
+      best.lastMatch = m.distance;
+      if (m.label !== "unknown" && m.distance < CFG.matchDist) {
+        best.label = m.label; best.bad = 0; best.pendingSince = 0;
+      } else if (m.distance >= (best.label ? CFG.revokeDist : CFG.unknownDist)) {
+        if (best.bad < CFG.badTicks) best.bad++;
+        if (best.bad >= CFG.badTicks) best.label = null;
+      }
+    }
+    // Pending escalation: >3 s with no owner match → treat as unknown
+    if (matcher && !best.label && best.bad < CFG.badTicks) {
+      if (!best.pendingSince) best.pendingSince = now;
+      if (now - best.pendingSince > 3000) best.bad = CFG.badTicks;
+    }
+    d.status = !matcher ? "n/a" :
+               best.bad >= CFG.badTicks ? "unknown" :
+               best.label ? "owner" : "pending";
+  });
+  tracks = tracks.filter(t => now - t.seen < 2000);
+}
+
+/* ---------------- drawing ---------------- */
+function draw(dets) {
+  const c = ov.getContext("2d"), W = ov.width;
+  c.clearRect(0, 0, W, ov.height);
+  c.font = "14px monospace"; c.lineWidth = 2;
+  dets.forEach(d => {
+    const b = d.detection.box, x = W - (b.x + b.width);
+    const col = d.status === "unknown" ? "#ff4d4d"
+              : d.status === "pending" || !d.good ? "#ffc400"
+              : "#39ff14";
+    c.strokeStyle = c.fillStyle = col;
+    c.strokeRect(x, b.y, b.width, b.height);
+    let t = d.status === "n/a" ? "face"
+          : d.status === "owner" ? d.track.label
+          : d.status === "unknown" ? "! UNKNOWN"
+          : "~ verifying";
+    if (!d.good) t += " (partial)";
+    c.fillText(t, x, Math.max(14, b.y - 6));
+  });
+}
+
+/* ---------------- privacy ---------------- */
+function privacy(dets, now) {
+  let intruder = false, why = "";
+  const pend = dets.filter(d => d.status === "pending").length;
+  if (matcher) {
+    const u = dets.filter(d => d.status === "unknown").length;
+    if (u) { intruder = true; why = u + " unknown face" + (u > 1 ? "s" : ""); }
+    dets.filter(d => d.status === "owner").forEach(d => {
+      const n = d.track.label;
+      if (!seenAt[n] || now - seenAt[n] > 30000) log(n + " present");
+      seenAt[n] = now;
+    });
+  } else if (dets.length > 1) {
+    intruder = true;
+    why = dets.length + " faces in view";
+  }
+  if (intruder) {
+    intruderUntil = now + 1500;
+    lastWhy = why;
+    if (!intruderOpen) { intruderOpen = true; beep(); log("Privacy: " + why, true); }
+  }
+  const active = now < intruderUntil;
+  if (!active) intruderOpen = false;
+  stage.classList.toggle("blur", active);
+  const st = $("pState");
+  if (active)      { st.textContent = "! ALERT: " + lastWhy; st.className = "state bad"; }
+  else if (pend)   { st.textContent = "~ Verifying…";        st.className = "state mid"; }
+  else if (dets.length) { st.textContent = "✓ Clear";         st.className = "state ok"; }
+  else             { st.textContent = "· No face in view";   st.className = "state ok"; }
+}
+
+/* ---------------- study guard ---------------- */
+function study(dets, dt) {
+  const pool = matcher ? dets.filter(d => d.status === "owner") : dets;
+  const prim = pool.slice().sort((a, b) => b.detection.box.area - a.detection.box.area)[0];
+  lastPrimary = prim && prim.studyGood ? prim : null;
+
+  const raw = { absent: false, no_focus: false, look_away: false };
+  let posture = "--", earTxt = "--", headTxt = "--";
+
+  if (!prim || !prim.studyGood) {
+    raw.absent = true;
+    reasonTxt = prim ? "Face partly hidden" : "No face in view";
+  } else {
+    const p = prim.landmarks.positions;
+    const b = prim.detection.box;
+    const tr = prim.track;
+
+    const earRaw = (earOf(p, 36) + earOf(p, 42)) / 2;
+    const eyeMidX = (p[36].x + p[45].x) / 2;
+    const iod = dist(p[36], p[45]) || 1;
+    const yawRaw = (p[30].x - eyeMidX) / iod;
+    const eyeY = p.slice(36, 48).reduce((s, q) => s + q.y, 0) / 12;
+    const pitchRaw = (p[30].y - eyeY) / (p[8].y - eyeY);
+    const roll = Math.atan2(p[45].y - p[36].y, p[45].x - p[36].x) * 180 / Math.PI;
+
+    tr.ear   = tr.ear   == null ? earRaw   : tr.ear   * (1 - EMA.ear)   + earRaw   * EMA.ear;
+    tr.yaw   = tr.yaw   == null ? yawRaw   : tr.yaw   * (1 - EMA.yaw)   + yawRaw   * EMA.yaw;
+    tr.pitch = tr.pitch == null ? pitchRaw : tr.pitch * (1 - EMA.pitch) + pitchRaw * EMA.pitch;
+    tr.roll  = roll;
+    tr.w = b.width; tr.h = b.height; tr.cy = b.y + b.height / 2;
+
+    const ear = tr.ear, yaw = tr.yaw, pitch = tr.pitch;
+
+    const who = tr.label || "default";
+    const cal = base[who] || base["default"];
+    const refEar = cal && cal.ear != null ? cal.ear
+                 : (eaS.length >= 20 ? pct(eaS, 0.85) : null);
+    const thr = refEar ? refEar * CFG.earRatio : CFG.defaultEar;
+    const by = cal && cal.yaw != null ? cal.yaw
+             : (yawS.length >= 20 ? pct(yawS, 0.5) : 0);
+    const bp = cal && cal.pitch != null ? cal.pitch
+             : (pitchS.length >= 20 ? pct(pitchS, 0.5) : null);
+    const yd = yaw - by;
+    const pd = bp == null ? 0 : pitch - bp;
+
+    raw.look_away = Math.abs(yd) > CFG.yawDev || Math.abs(pd) > CFG.pitchDev;
+    raw.no_focus  = !raw.look_away && ear < thr;
+    if (!raw.look_away && !raw.no_focus) {
+      keep(eaS, ear); keep(yawS, yaw); keep(pitchS, pitch);
+    }
+
+    // Blink counter (state transition open → closed)
+    const closed = ear < thr;
+    if (closed && !tr.blinkState) { tr.blinkState = true; if (counting()) sess.blinks++; }
+    else if (!closed && tr.blinkState) tr.blinkState = false;
+
+    const yawDeg = Math.asin(clamp(yd, -1, 1)) * 180 / Math.PI;
+    const pitchDeg = Math.asin(clamp(pd, -1, 1)) * 180 / Math.PI;
+    earTxt = ear.toFixed(2) + " (closed below " + thr.toFixed(2) + ")";
+    headTxt = Math.round(yawDeg) + "° / " + Math.round(pitchDeg) + "°";
+
+    // Posture checks
+    const issues = [];
+    if (cal && cal.w && b.width > cal.w * 1.3) issues.push("too close");
+    if (cal && cal.h && tr.cy - cal.cy > cal.h * 0.35) issues.push("head low");
+    const rollDev = cal && cal.roll != null ? CFG.rollDev : CFG.rollDev;
+    if (Math.abs(roll - (cal && cal.roll || 0)) > rollDev) issues.push("head tilted");
+    posture = issues.length ? issues.join(", ") : (cal ? "OK" : "not calibrated");
+    if (issues.length && counting()) alertOnce(issues[0]);
+
+    // Calibration sampling
+    if (calibState && prim.studyGood) {
+      calibState.ears.push(ear);
+      calibState.yaws.push(yaw);
+      calibState.pitches.push(pitch);
+      calibState.rolls.push(roll);
+      calibState.lastW = b.width;
+      calibState.lastCy = tr.cy;
+      calibState.lastH = b.height;
+    }
+  }
+
+  // Reason durations
+  for (const k in EP) {
+    const e = EP[k];
+    if (raw[k]) {
+      e.ms += dt;
+      if (e.ms >= e.flag && !e.flagged) {
+        e.flagged = true;
+        if (counting()) { counts[k]++; beep(); log("FLAG: " + e.name, true); }
+      }
+    } else {
+      if (e.flagged && counting()) log(e.name + " ended after " + (e.ms / 1000).toFixed(1) + " s");
+      e.ms = 0; e.flagged = false;
+    }
+  }
+
+  let nf = null;
+  for (const k of ["absent", "no_focus", "look_away"]) {
+    if (EP[k].ms >= EP[k].grace) { nf = k; break; }
+  }
+
+  // UI
+  const st = $("sState");
+  let ic, txt, cls;
+  if (nf === "absent")      { ic = "✕"; txt = reasonTxt || "Absent"; cls = "bad"; }
+  else if (nf === "no_focus"){ ic = "◉"; txt = "Eyes closed / no focus"; cls = "bad"; }
+  else if (nf === "look_away"){ ic = "~"; txt = "Looking away"; cls = "mid"; }
+  else                       { ic = "✓"; txt = "Focused"; cls = "ok"; }
+  st.textContent = ic + " " + txt;
+  st.className = "state " + cls;
+  $("posture").textContent = posture;
+  $("earv").textContent = earTxt;
+  $("headv").textContent = headTxt;
+  $("blinksv").textContent = sess.blinks;
+  $("fTime").textContent = fmt(sess.focusMs);
+  $("tTime").textContent = fmt(sess.ms);
+  $("fPct").textContent = sess.ms > 5000 ? Math.round(sess.focusMs / sess.ms * 100) + "%" : "--";
+
+  return nf;
+}
+
+/* ---------------- calibration ---------------- */
+function calibrate() {
+  if (calibState) return;
+  if (!lastPrimary) { setStatus("No fully visible face. Sit in view and try again.", true); return; }
+  const who = lastPrimary.track.label || "default";
+  calibState = { who, ears: [], yaws: [], pitches: [], rolls: [],
+                 until: performance.now() + 2000 };
+  $("calBtn").disabled = true;
+  setStatus("Calibrating — hold still, eyes open…");
+}
+function finishCalibration() {
+  const c = calibState;
+  calibState = null;
+  $("calBtn").disabled = !(cameraOn && modelsReady);
+  if (!c || c.ears.length < 5) {
+    setStatus("Calibration failed. Keep your face in view and try again.", true);
+    return;
+  }
+  base[c.who] = {
+    ear: pct(c.ears, 0.85) || CFG.defaultEar,
+    yaw: pct(c.yaws, 0.5) || 0,
+    pitch: pct(c.pitches, 0.5) || 0,
+    roll: pct(c.rolls, 0.5) || 0,
+    w: c.lastW, cy: c.lastCy, h: c.lastH
+  };
+  saveJSON(KEYS.cal, base);
+  setStatus("Sitting position saved" + (c.who !== "default" ? " for " + c.who : "") + ".");
+  log("Calibrated sitting position" + (c.who !== "default" ? " for " + c.who : ""));
+}
+
+/* ---------------- session & reward ---------------- */
+function accountSession(dt, nf) {
+  if (!sess.active || sess.paused || sess.onBreak) return;
+  if (nf === "guard-off") return;            // study guard off → don't count
+  sess.ms += dt;
+  if (nf === null) {
+    sess.focusMs += dt;
+    const key = todayKey();
+    daily[key] = (daily[key] || 0) + dt;
+    if ($("breakOn").checked) checkBreak(dt);
+  }
+}
+function checkBreak(dt) {
+  const limit = CFG.breakIntervalMin * 60 * 1000;
+  sess.breakAt += dt;
+  if (sess.breakAt >= limit) {
+    sess.onBreak = true;
+    sess.breakLeft = CFG.breakDurationSec * 1000;
+    log("20-20-20: look 20 ft away for 20 s", true);
+    beep(440, 0.3); setTimeout(() => beep(660, 0.3), 350);
+  }
+}
+function tickBreak(dt) {
+  if (!sess.onBreak) return;
+  sess.breakLeft -= dt;
+  if (sess.breakLeft <= 0) {
+    sess.onBreak = false;
+    sess.breakAt = 0;
+    log("Break over — welcome back");
+    beep(660, 0.2);
+  }
+}
+function calcReward() {
+  const flags = counts.absent + counts.no_focus + counts.look_away;
+  const rate = sess.ms > 0 ? sess.focusMs / sess.ms : 0;
+  const clean = flags === 0;
+  const flagPenalty = Math.min(0.30, Math.max(0, flags - 1) * 0.03);
+  const mult = clamp(clean ? 1 + rate : rate - flagPenalty, 0.5, 2);
+  const points = Math.round(sess.focusMs / 60000 * CFG.pointsPerFocusMin * mult);
+  return { flags, rate, clean, mult, points };
+}
+function rewardUI() {
+  $("flagsv").textContent = counts.no_focus + " / " + counts.absent + " / " + counts.look_away;
+  $("totv").textContent = rw.points;
+  if (!sess.active) {
+    $("multv").textContent = "--";
+    $("projv").textContent = "0";
+  } else if (sess.onBreak) {
+    $("multv").textContent = "break";
+    $("projv").textContent = Math.round(sess.breakLeft / 1000) + "s left";
+  } else {
+    const r = calcReward();
+    $("multv").textContent = "×" + r.mult.toFixed(2) + (r.clean ? " (clean)" : "");
+    $("projv").textContent = r.points;
+  }
+  const t = daily[todayKey()] || 0;
+  const goal = Math.max(1, +$("goalIn").value || 30);
+  $("todayv").textContent = Math.round(t / 60000) + " min / " + goal + " min";
+  $("todayBar").style.width = Math.min(100, (t / 60000) / goal * 100) + "%";
+  $("streakv").textContent = streak() + " days";
+}
+function streak() {
+  let n = 0;
+  const d = new Date();
+  if ((daily[todayKey()] || 0) < 60000) d.setDate(d.getDate() - 1);
+  for (let i = 0; i < 3650; i++) {
+    const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    if ((daily[key] || 0) >= 60000) { n++; d.setDate(d.getDate() - 1); }
+    else break;
+  }
+  return n;
+}
+function resetSessionDisplay() {
+  sess.ms = 0; sess.focusMs = 0; sess.blinks = 0;
+  sess.breakAt = 0; sess.onBreak = false; sess.breakLeft = 0;
+  $("fTime").textContent = "00:00";
+  $("tTime").textContent = "00:00";
+  $("fPct").textContent = "--";
+  $("blinksv").textContent = "0";
+  $("multv").textContent = "--";
+  $("projv").textContent = "0";
+}
+function toggleSession() {
+  if (!sess.active) {
+    sess.active = true; sess.paused = false;
+    sess.ms = 0; sess.focusMs = 0; sess.blinks = 0;
+    sess.breakAt = 0; sess.onBreak = false; sess.breakLeft = 0;
+    counts.absent = counts.no_focus = counts.look_away = 0;
+    Object.values(EP).forEach(e => { e.ms = 0; e.flagged = false; });
+    $("sessBtn").textContent = "End session and bank reward";
+    $("pauseBtn").disabled = false; $("pauseBtn").textContent = "Pause";
+    requestWakeLock();
+    log("Session started");
+    return;
+  }
+  sess.active = false; sess.paused = false; sess.onBreak = false;
+  $("sessBtn").textContent = "Start session";
+  $("pauseBtn").disabled = true;
+  releaseWakeLock();
+  const r = calcReward();
+  const min = sess.ms / 60000;
+  if (min < CFG.minSessionMin) {
+    log("Session ended: too short (under " + CFG.minSessionMin + " min), no reward banked");
+    setStatus("Session too short to bank a reward.", true);
+    resetSessionDisplay();
+    return;
+  }
+  rw.points += r.points;
+  rw.sessions.unshift({
+    date: new Date().toLocaleString(),
+    min: min.toFixed(1),
+    focus: Math.round(r.rate * 100),
+    flags: r.flags,
+    mult: r.mult.toFixed(2),
+    points: r.points
+  });
+  rw.sessions = rw.sessions.slice(0, 30);
+  saveJSON(KEYS.rw, rw);
+  renderHist();
+  log("Session ended: +" + r.points + " points (" +
+      Math.round(r.rate * 100) + "% focus, " + r.flags + " flags" +
+      (r.clean ? ", clean bonus" : "") + ")");
+  setStatus("Session banked: +" + r.points + " points.");
+  resetSessionDisplay();
+}
+function togglePause() {
+  if (!sess.active) return;
+  sess.paused = !sess.paused;
+  $("pauseBtn").textContent = sess.paused ? "Resume" : "Pause";
+  log(sess.paused ? "Session paused" : "Session resumed");
+}
+function renderHist() {
+  $("hist").innerHTML = rw.sessions.slice(0, 5).map(s =>
+    `<li>${safeText(s.date)} - ${s.min} min, ${s.focus}% focus, ${s.flags} flags, ×${s.mult}, +${s.points}</li>`
+  ).join("");
+}
+$("resetRw").onclick = () => {
+  if (!confirm("Reset all banked points and session history?")) return;
+  rw = { points: 0, sessions: [] };
+  saveJSON(KEYS.rw, rw); renderHist(); rewardUI(); log("Rewards reset");
+};
+
+/* ---------------- wake lock ---------------- */
+let wakeLock = null;
+async function requestWakeLock() {
+  if (!("wakeLock" in navigator)) return;
+  try {
+    wakeLock = await navigator.wakeLock.request("screen");
+    wakeLock.addEventListener("release", () => { wakeLock = null; });
+  } catch {}
+}
+function releaseWakeLock() {
+  if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+}
+
+/* ---------------- camera ---------------- */
+async function listCameras() {
+  try {
+    const devs = await navigator.mediaDevices.enumerateDevices();
+    const sel = $("camSel");
+    const prev = sel.value;
+    sel.innerHTML = "";
+    const def = document.createElement("option");
+    def.value = ""; def.textContent = "Default";
+    sel.appendChild(def);
+    devs.filter(d => d.kind === "videoinput").forEach((c, i) => {
+      const o = document.createElement("option");
+      o.value = c.deviceId;
+      o.textContent = c.label || ("Camera " + (i + 1));
+      sel.appendChild(o);
+    });
+    if (prev) sel.value = prev;
+  } catch {}
+}
+async function startCamera() {
+  if (!window.isSecureContext) {
+    setStatus("Camera needs HTTPS or localhost. Open this page over a secure origin.", true);
+    return;
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    setStatus("This browser has no webcam support.", true);
+    return;
+  }
+  try {
+    if (!audio) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) audio = new AC();
+    }
+    if (audio && audio.state === "suspended") audio.resume().catch(() => {});
+    const deviceId = $("camSel").value || undefined;
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: deviceId
+        ? { deviceId: { exact: deviceId }, width: { ideal: 640 }, height: { ideal: 480 } }
+        : { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
+      audio: false
+    });
+    video.srcObject = stream;
+    video.hidden = false;
+    $("idle").hidden = true;
+    await video.play();
+    ov.width = video.videoWidth || 640;
+    ov.height = video.videoHeight || 480;
+    stage.style.aspectRatio = ov.width + " / " + ov.height;
+    cameraOn = true;
+    $("startBtn").disabled = true;
+    $("stopBtn").disabled = false;
+    $("hideBtn").disabled = false;
+    enableControls();
+    lastT = performance.now();
+    setStatus(modelsReady ? "Camera online." : "Camera online. Models still loading…");
+    log("Camera started");
+    await listCameras();
+    if (!running) { running = true; tick(); }
+  } catch (e) {
+    const msg =
+      e.name === "NotAllowedError" ? "Camera permission denied. Allow it in your browser's site settings." :
+      e.name === "NotFoundError"  ? "No camera found on this device." :
+      e.name === "NotReadableError" ? "Camera is in use by another app." :
+      "Camera error: " + e.message;
+    setStatus(msg, true);
+  }
+}
+function stopCamera() {
+  running = false;
+  cameraOn = false;
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  video.srcObject = null;
+  video.hidden = true;
+  $("idle").hidden = false;
+  $("startBtn").disabled = false;
+  $("stopBtn").disabled = true;
+  $("hideBtn").disabled = true;
+  $("hideBtn").textContent = "Hide preview";
+  stage.classList.remove("preview-hidden", "blur");
+  enableControls();
+  setStatus("Camera stopped.");
+  log("Camera stopped");
+}
+function enableControls() {
+  const on = cameraOn && modelsReady;
+  $("calBtn").disabled = !on || !!calibState;
+  $("enrollBtn").disabled = !on;
+  $("sessBtn").disabled = !on;
+  $("pauseBtn").disabled = !on || !sess.active;
+}
+
+/* ---------------- detection pipeline ---------------- */
+async function detectFrame() {
+  frameCount++;
+  const hasMatcher = !!matcher && faceapi.nets.faceRecognitionNet.isLoaded;
+  const doRecog = hasMatcher && (
+    frameCount % 2 === 0 ||
+    tracks.length === 0 ||
+    tracks.some(t => t.bad > 0)
+  );
+  const doLandmarks = doRecog || $("studyOn").checked;
+  let task = faceapi.detectAllFaces(video,
+    new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.4 }));
+  if (doRecog) task = task.withFaceLandmarks().withFaceDescriptors();
+  else if (doLandmarks) task = task.withFaceLandmarks();
+  return await task;
+}
+
+/* ---------------- debug ---------------- */
+function updateDebug(dets, ms) {
+  const now = performance.now();
+  const fps = lastDebugT ? Math.round(1000 / Math.max(1, now - lastDebugT)) : 0;
+  lastDebugT = now;
+  const parts = [
+    "fps≈" + fps,
+    "infer " + Math.round(ms) + "ms",
+    "faces " + dets.length,
+    "tracks " + tracks.length
+  ];
+  dets.forEach((d, i) => {
+    const m = d.track && d.track.lastMatch;
+    parts.push("#" + i + " " + d.status + (m != null ? " d=" + m.toFixed(2) : ""));
+  });
+  parts.push("sess " + (sess.active ? (sess.paused ? "paused" : sess.onBreak ? "break" : "on") : "off"));
+  parts.push("rate " + (sess.ms > 0 ? (sess.focusMs / sess.ms * 100).toFixed(0) + "%" : "--"));
+  debugPre.textContent = parts.join("\n");
+}
+
+/* ---------------- main loop ---------------- */
+async function tick() {
+  if (!running || !cameraOn) return;
+  const t0 = performance.now();
+  try {
+    if (modelsReady && !document.hidden) {
+      const dets = await detectFrame();
+      const now = performance.now();
+      const dt = Math.min(now - lastT, 1000);
+      lastT = now;
+
+      updateTracks(dets, now);
+      draw(dets);
+
+      if ($("privOn").checked) privacy(dets, now);
+      else {
+        stage.classList.remove("blur");
+        $("pState").textContent = "· Off";
+        $("pState").className = "state mid";
+      }
+
+      let nf = null;
+      if ($("studyOn").checked) nf = study(dets, dt);
+      else {
+        $("sState").textContent = "· Off";
+        $("sState").className = "state mid";
+        nf = "guard-off";
+      }
+
+      if (calibState && now > calibState.until) finishCalibration();
+      if (sess.onBreak) tickBreak(dt);
+      accountSession(dt, nf);
+      rewardUI();
+      if (DEBUG) updateDebug(dets, performance.now() - t0);
+    }
+  } catch (e) { console.error(e); }
+
+  const elapsed = performance.now() - t0;
+  setTimeout(tick, Math.max(0, 150 - elapsed));
+}
+
+/* ---------------- settings ---------------- */
+function loadCfg() {
+  const stored = loadJSON(KEYS.cfg, {});
+  CFG = { ...DEFAULTS, ...stored };
+  $("cfgScore").value = CFG.minScore;
+  $("cfgYaw").value   = Math.round(Math.asin(clamp(CFG.yawDev, -1, 1)) * 180 / Math.PI);
+  $("cfgPitch").value = Math.round(Math.asin(clamp(CFG.pitchDev, -1, 1)) * 180 / Math.PI);
+  $("cfgEar").value   = CFG.earRatio;
+}
+function saveCfg() {
+  CFG.minScore  = clamp(+$("cfgScore").value || 0.75, 0.3, 0.95);
+  CFG.yawDev    = Math.sin(clamp(+$("cfgYaw").value   || 15,   5, 45) * Math.PI / 180);
+  CFG.pitchDev  = Math.sin(clamp(+$("cfgPitch").value || 12,   5, 45) * Math.PI / 180);
+  CFG.earRatio  = clamp(+$("cfgEar").value   || 0.72, 0.4, 0.95);
+  saveJSON(KEYS.cfg, CFG);
+}
+["cfgScore","cfgYaw","cfgPitch","cfgEar"].forEach(id => $(id).oninput = saveCfg);
+$("cfgReset").onclick = () => {
+  CFG = { ...DEFAULTS };
+  saveJSON(KEYS.cfg, CFG);
+  loadCfg();
+  setStatus("Settings reset to defaults.");
+};
+
+/* ---------------- backup ---------------- */
+$("jsonBtn").onclick = () => {
+  const data = {
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    faces, base, rw, daily, logRows, cfg: CFG
+  };
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+  a.download = "guardian-backup.json";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+$("importBtn").onclick = () => $("importFile").click();
+$("importFile").onchange = async (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    if (data.faces) { faces = normalizeFaces(data.faces); saveJSON(KEYS.faces, faces); rebuild(); }
+    if (data.base) { base = data.base; saveJSON(KEYS.cal, base); }
+    if (data.rw)   { rw = data.rw;     saveJSON(KEYS.rw, rw); renderHist(); }
+    if (data.daily){ daily = data.daily; saveJSON(KEYS.daily, daily); }
+    if (data.logRows){ logRows = data.logRows; saveJSON(KEYS.log, logRows); renderLog(); }
+    if (data.cfg)  { CFG = { ...DEFAULTS, ...data.cfg }; saveJSON(KEYS.cfg, CFG); loadCfg(); }
+    setStatus("Restore successful.");
+    log("Restored backup");
+  } catch (err) {
+    setStatus("Restore failed: " + err.message, true);
+  }
+  e.target.value = "";
+};
+$("csvBtn").onclick = () => {
+  const rows = ["time,event"].concat(
+    logRows.slice().reverse().map(r => `${r.t.toISOString()},"${String(r.msg).replace(/"/g, '""')}"`));
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([rows.join("\n")], { type: "text/csv" }));
+  a.download = "guardian-log.csv"; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+
+/* ---------------- enrolment ---------------- */
+async function enroll() {
+  const name = $("nameIn").value.trim();
+  if (!name) { setStatus("Type a name first.", true); return; }
+  if (!faceapi.nets.faceRecognitionNet.isLoaded) {
+    setStatus("Loading recognition model…");
+    try { await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL); }
+    catch (e) { setStatus("Could not load recognition model.", true); return; }
+  }
+  $("enrollBtn").disabled = true;
+  setStatus("Enrolling " + name + " — look straight at the camera…");
+  const got = [];
+  for (let i = 0; i < 30 && got.length < 6; i++) {
+    $("enrollBtn").textContent = "Enrolling… " + got.length + "/6";
+    const ds = await faceapi.detectAllFaces(video,
+      new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.4 }))
+      .withFaceLandmarks().withFaceDescriptors();
+    if (ds.length === 1 && goodQuality(ds[0], false)) got.push(ds[0].descriptor);
+    await new Promise(r => setTimeout(r, 200));
+  }
+  $("enrollBtn").disabled = false;
+  $("enrollBtn").textContent = "Enroll face";
+  if (got.length < 3) {
+    setStatus("Need exactly one fully visible face. Try again.", true);
+    return;
+  }
+  faces = faces.filter(f => f.name !== name);
+  faces.push({ name, d: got.map(d => Array.from(d)) });
+  saveJSON(KEYS.faces, faces); rebuild(); tracks = [];
+  $("nameIn").value = "";
+  setStatus("Enrolled " + name + ".");
+  log("Enrolled " + name);
+}
+
+/* ---------------- bindings ---------------- */
+$("startBtn").onclick = startCamera;
+$("stopBtn").onclick = stopCamera;
+$("calBtn").onclick = calibrate;
+$("enrollBtn").onclick = enroll;
+$("sessBtn").onclick = toggleSession;
+$("pauseBtn").onclick = togglePause;
+$("hideBtn").onclick = () => {
+  stage.classList.toggle("preview-hidden");
+  $("hideBtn").textContent = stage.classList.contains("preview-hidden") ? "Show preview" : "Hide preview";
+};
+$("nameIn").addEventListener("keydown", e => {
+  if (e.key === "Enter" && !$("enrollBtn").disabled) enroll();
+});
+$("goalIn").addEventListener("change", () => { rewardUI(); });
+document.addEventListener("keydown", e => {
+  if (e.target.matches("input, select, textarea")) return;
+  if (e.key === "s" || e.key === "S") { if (!$("sessBtn").disabled) toggleSession(); }
+  if (e.key === "c" || e.key === "C") { if (!$("calBtn").disabled) calibrate(); }
+});
+document.addEventListener("visibilitychange", () => { lastT = performance.now(); });
+window.addEventListener("beforeunload", () => {
+  if (stream) stream.getTracks().forEach(t => t.stop());
+});
+
+/* ---------------- init ---------------- */
+async function init() {
+  loadCfg();
+  faces = normalizeFaces(loadJSON(KEYS.faces, []));
+  rw = loadJSON(KEYS.rw, { points: 0, sessions: [] });
+  base = loadJSON(KEYS.cal, {});
+  daily = loadJSON(KEYS.daily, {});
+  logRows = loadJSON(KEYS.log, []) || [];
+  renderLog(); renderHist(); rewardUI();
+
+  if (typeof faceapi === "undefined") {
+    setStatus("Could not load face-api.js. Check your internet connection and reload.", true);
+    return;
+  }
+  try {
+    const loaders = [
+      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+      faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL)
+    ];
+    if (faces.length) loaders.push(faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL));
+    await Promise.all(loaders);
+    modelsReady = true;
+    rebuild();
+    enableControls();
+    setStatus(cameraOn ? "Camera online." : 'Models ready. Press "Start camera".');
+  } catch (e) {
+    console.error(e);
+    setStatus("Could not download model files. Check your connection and reload.", true);
+  }
+}
+init();
+})();
+</script>
+</body>
+</html>
